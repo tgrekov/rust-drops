@@ -4,7 +4,7 @@ const viewer = new Viewer();
 (async () => {
     await viewer.connectToBrowser()
     await viewer.start('https://www.twitch.tv/drops/inventory');
-    setTimeout(loop, 20000);
+    setInterval(loop, 20000);
 })()
 
 async function loop() {

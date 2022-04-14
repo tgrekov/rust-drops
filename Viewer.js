@@ -8,6 +8,7 @@ module.exports = class Viewer {
     constructor() {
         this.browser = null;
         this.page = null;
+        this.ageLoop = null;
     }
     async connectToBrowser() {
         this.browser = await puppeteer.connect({browserURL: BROWSER_URL});
@@ -21,6 +22,10 @@ module.exports = class Viewer {
     async stop() {
         await this.page.close();
         this.page = null;
+        if (this.ageLoop) {
+            clearInterval(this.ageLoop);
+            this.ageLoop = null;
+        }
     }
 
     async reload() {
@@ -38,6 +43,6 @@ module.exports = class Viewer {
     }
 
     confirmAgeLoop() {
-        setInterval(() => confirmAge(this.page), 3000);
+        this.ageLoop = setInterval(() => (this.page && confirmAge(this.page)), 3000);
     }
 }

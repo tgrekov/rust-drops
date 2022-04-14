@@ -7,7 +7,7 @@ const Viewer = require('./Viewer');
 const LIST = 'https://twitch.facepunch.com/';
 const DATA = './data.json';
 const DELAY = 3*60*1000; // 3min
-const DURATION = 3*60*60*1000; //3h
+const DURATION = 3*60*60*1000; //3h //todo: custom duration
 
 const viewer = new Viewer();
 let currentStreamer = null;
@@ -39,9 +39,9 @@ async function loop() {
         console.log(`Going to watch`, [currentStreamer], `for`, timeToWatch, `ms`);
 
         await viewer.start(currentStreamer);
+        viewer.confirmAgeLoop();
         closingTimeoutId = setTimeout(async () => {
             await stop();
-            await viewer.claimItems();
             loop();
         }, timeToWatch);
     } else {

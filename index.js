@@ -6,8 +6,8 @@ const Viewer = require('./Viewer');
 
 const LIST = 'https://twitch.facepunch.com/';
 const DATA = './data.json';
-const DELAY = 3*60*1000; // 3min
-const DURATION = 3*60*60*1000; //3h //todo: custom duration
+const DELAY = 1*60*1000; // 1min
+const DURATION = 3*60*60*1000 + 5*60*1000; //3h + 5m //todo: custom duration
 
 const viewer = new Viewer();
 let currentStreamer = null;
@@ -65,29 +65,54 @@ async function loadRequiredStreamers() {
     const data = await readFile(DATA, {encoding: 'utf8'});
     requiredStreamers = JSON.parse(data);
     Object.keys(requiredStreamers).forEach(streamer => {
-        requiredStreamers[streamer] = parseInt(requiredStreamers[streamer]);
+        requiredStreamers[streamer.toLowerCase()] = parseInt(requiredStreamers[streamer]); //!lower
     });
 }
 
-async function loadActiveStreamers() {
-    const {data} = await axios.get(LIST);
-    const $ = cheerio.load(data);
+// async function loadActiveStreamers() {
+//     const {data} = await axios.get(LIST);
+//     const $ = cheerio.load(data);
 
-    const allStreamers = [];
-    $('a.drop-tile').map((i, el) => {
-        allStreamers.push([
-            el.attribs.href,
-            el.attribs.class.split(' ').includes('is-live'),
-        ]);
+//     const allStreamers = [];
+//     $('a.drop-tile').map((i, el) => {
+//         allStreamers.push([
+//             el.attribs.href,
+//             el.attribs.class.split(' ').includes('is-live'),
+//         ]);
+//     });
+
+//     const requiredStreamersList = Object.keys(requiredStreamers);
+//     return (
+//         allStreamers
+//             .filter(([streamer, isOnline]) => isOnline && requiredStreamersList.includes(streamer))
+//             .map(([streamer]) => streamer)
+//             .sort((a,b) => (requiredStreamers[b] - requiredStreamers[a]))
+//     );
+// }
+
+async function loadActiveStreamers() {
+    const token = '7d9evf8on3vocg02jm7a1fyq2phym2';
+    const CLIENT_ID = 'mg7q35avnbd00b4jdzaqh6fhhhw0bq';
+
+    const requiredStreamersList = Object
+        .keys(requiredStreamers)
+        .map(url => url.replace('https://www.twitch.tv/', ''))
+        .map(login => `user_login=${login}`)
+        .join('&');
+
+    const {data} = await axios.get(`https://api.twitch.tv/helix/streams?${requiredStreamersList}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Client-Id': CLIENT_ID,
+        }
     });
 
-    const requiredStreamersList = Object.keys(requiredStreamers);
-    return (
-        allStreamers
-            .filter(([streamer, isOnline]) => isOnline && requiredStreamersList.includes(streamer))
-            .map(([streamer]) => streamer)
-            .sort((a,b) => (requiredStreamers[b] - requiredStreamers[a]))
-    );
+    console.log({TWITCH: data.data.map(item => [item.user_login, item.type])})
+
+    return data.data
+        .filter(({type}) => (type === 'live'))
+        .map(({user_login}) => `https://www.twitch.tv/${user_login}`)
+        .sort((a,b) => (requiredStreamers[b.toLowerCase()] - requiredStreamers[a.toLowerCase()]))
 }
 
 function getDuration(streamer) {
